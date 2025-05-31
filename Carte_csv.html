@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Interactive</title>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Futura:wght@400;700&display=swap');
+        
+        body { font-family: 'Futura', sans-serif; text-align: center; background-color: #fff8e1; overflow-y: hidden}
+        #container { display: flex; }
+        #map { width: 80%; height: 66vh; border-radius: 10px; border: 2px solid #ffa726; }
+        #sidebar { width: 20%; height: 59vh; overflow-y: auto; padding: 20px; margin: 5px; margin-top: 0px; background: #f7941e; border-radius: 10px; border: 2px solid #ffa726; color: white; }
+        #search, #promoFilter { width: 90%; padding: 10px; margin: 10px; border: 2px solid #f7941e; border-radius: 5px; }
+    
+        /* Ajout du logo */
+        #logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 80px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <img id="logo" src="Logo_Icam_2.png" alt="Logo">
+    <h2>Carte Interactive des Pays</h2>
+    <input type="text" id="search" placeholder="Rechercher un pays..." onkeyup="filterMarkers()">
+    <select id="promoFilter" onchange="filterByPromo()">
+        <option value="all">Toutes promotions</option>
+    </select>
+    <div id="container">
+        <div id="map"></div>
+        <div id="sidebar"><h3>Informations</h3><p>Sélectionnez un marqueur pour afficher les détails ici.</p></div>
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZ3VydmFuZnIiLCJhIjoiY203MjI5Y2EyMDR2eTJpc2ZjM3llazFwNSJ9._1ih1opeFU9RbWn8GZ0lyA';
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [10, 50],
+            zoom: 2
+        });
+
+        var markers = [];
+        var allData = [];
+        var promos = new Set();
+
+        function loadCSV() {
+            fetch('Donnée_étudiant.csv') // Remplacez par le chemin de votre fichier CSV
+                .then(response => response.text())
+                .then(data => {
+                    Papa.parse(data, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            allData = results.data;
+                            processData(allData);
+                            populatePromoFilter();
+                        }
+                    });
+                });
+        }
+
+        function processData(data) {
+            let countries = {};
+            markers.forEach(markerObj => markerObj.marker.remove());
+            markers = [];
+            
+            data.forEach(row => {
+                let country = row["Pays"].trim();
+                let lat = parseFloat(row["Latitude"]);
+                let lon = parseFloat(row["Longitude"]);
+                let student = `${row["Prenom"]} ${row["Nom"]} (${row["Promotion"]})`;
+                let promo = row["Promotion"].trim();
+                promos.add(promo);
+                
+                if (!countries[country]) {
+                    countries[country] = { lat, lon, students: [], promoSet: new Set() };
+                }
+                countries[country].students.push(student);
+                countries[country].promoSet.add(promo);
+            });
+
+            Object.keys(countries).forEach(country => {
+                let loc = countries[country];
+                
+                var el = document.createElement('div');
+                el.className = 'marker';
+                el.style.backgroundImage = 'url("Logo_Icam.png")';
+                el.style.width = '30px';
+                el.style.height = '30px';
+                el.style.backgroundSize = 'cover';
+                
+                var marker = new mapboxgl.Marker(el)
+                    .setLngLat([loc.lon, loc.lat])
+                    .addTo(map);
+                
+                marker.getElement().addEventListener('click', function() {
+                    document.getElementById("sidebar").innerHTML = `<h3>${country}</h3><ul>` + 
+                        loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
+                });
+                
+                markers.push({ country, marker, promos: loc.promoSet });
+            });
+        }
+
+        function filterMarkers() {
+            var input = document.getElementById("search").value.toLowerCase();
+            markers.forEach(markerObj => {
+                var country = markerObj.country.toLowerCase();
+                markerObj.marker.getElement().style.display = country.includes(input) ? "block" : "none";
+            });
+        }
+        
+        function filterByPromo() {
+            var selectedPromo = document.getElementById("promoFilter").value;
+            markers.forEach(markerObj => {
+                if (selectedPromo === "all" || markerObj.promos.has(selectedPromo)) {
+                    markerObj.marker.getElement().style.display = "block";
+                } else {
+                    markerObj.marker.getElement().style.display = "none";
+                }
+            });
+        }
+
+        function populatePromoFilter() {
+            let promoFilter = document.getElementById("promoFilter");
+            promos.forEach(promo => {
+                let option = document.createElement("option");
+                option.value = promo;
+                option.textContent = `Promotion ${promo}`;
+                promoFilter.appendChild(option);
+            });
+        }
+
+        loadCSV();
+    </script>
+</body>
+</html>
