@@ -52,7 +52,7 @@
         var promos = new Set();
 
         function loadCSV() {
-            fetch('Donnée_étudiant_html.csv') // Remplacez par le chemin de votre fichier CSV
+            fetch('Donnee_etudiant_html.csv') // Remplacez par le chemin de votre fichier CSV
                 .then(response => response.text())
                 .then(data => {
                     Papa.parse(data, {
