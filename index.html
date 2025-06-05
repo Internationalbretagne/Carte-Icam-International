@@ -60,9 +60,9 @@
 </head>
 <body>
   <img id="logo" src="Logo_Icam.png" alt="Logo">
-  <h2>Carte Interactive des Pays</h2>
+  <h2>Carte Interactive ICAM</h2>
 
-  <input type="text" id="search" placeholder="Rechercher un pays..." onkeyup="filterMarkers()" />
+  <input type="text" id="search" placeholder="Rechercher un pays ou une ville..." onkeyup="filterMarkers()" />
   <select id="promoFilter" onchange="filterByPromo()">
     <option value="all">Toutes promotions</option>
   </select>
@@ -77,6 +77,7 @@
 
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiZ3VydmFuZnIiLCJhIjoiY203MjI5Y2EyMDR2eTJpc2ZjM3llazFwNSJ9._1ih1opeFU9RbWn8GZ0lyA';
+
     const map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/mapbox/streets-v11',
@@ -89,7 +90,7 @@
     let promos = new Set();
 
     function loadCSV() {
-      fetch('Donnee_etudiant_html.csv')
+      fetch('Donnee_etudiant_Excel.csv')
         .then(response => {
           if (!response.ok) throw new Error("Fichier CSV introuvable.");
           return response.text();
@@ -107,41 +108,46 @@
         })
         .catch(error => {
           console.error("Erreur de chargement du CSV :", error);
-          alert("Le fichier CSV n'a pas pu être chargé. Utilise Live Server pour ouvrir ce fichier.");
+          alert("Le fichier CSV n'a pas pu être chargé. Utilisez Live Server pour ouvrir ce fichier.");
         });
     }
 
     function processData(data) {
       const countries = {};
+      const cities = {};
       markers.forEach(markerObj => markerObj.marker.remove());
       markers = [];
 
       data.forEach(row => {
         const country = row["Pays"].trim();
-        const lat = parseFloat(row["Latitude"]);
-        const lon = parseFloat(row["Longitude"]);
+        const city = row["Ville"].trim();
+        const lat = parseFloat(row["Latitude"].replace(",", "."));
+        const lon = parseFloat(row["Longitude"].replace(",", "."));
         const student = `${row["Prenom"]} ${row["Nom"]} (${row["Promotion"]})`;
         const promo = row["Promotion"].trim();
         promos.add(promo);
 
-        if (!countries[country]) {
-          countries[country] = { lat, lon, students: [], promoSet: new Set() };
+        if (promo === "2025") {
+          if (!countries[country]) {
+            countries[country] = { lat, lon, students: [], promoSet: new Set() };
+          }
+          countries[country].students.push(student);
+          countries[country].promoSet.add(promo);
         }
 
-        countries[country].students.push(student);
-        countries[country].promoSet.add(promo);
+        if (promo === "2026") {
+          if (!cities[city]) {
+            cities[city] = { lat, lon, students: [], promoSet: new Set() };
+          }
+          cities[city].students.push(student);
+          cities[city].promoSet.add(promo);
+        }
       });
 
+      // Affichage des pays (promo 2025)
       Object.keys(countries).forEach(country => {
         const loc = countries[country];
-
-        const el = document.createElement('div');
-        el.className = 'marker';
-        el.style.backgroundImage = 'url("Marqueur_Icam.png")';
-        el.style.width = '30px';
-        el.style.height = '30px';
-        el.style.backgroundSize = 'cover';
-
+        const el = createMarkerElement();
         const marker = new mapboxgl.Marker(el)
           .setLngLat([loc.lon, loc.lat])
           .addTo(map);
@@ -152,15 +158,50 @@
             loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
         });
 
-        markers.push({ country, marker, promos: loc.promoSet });
+        markers.push({ name: country, marker, promos: loc.promoSet });
       });
+
+      Object.keys(cities).forEach(city => {
+        const loc = cities[city];
+
+        const el = document.createElement('div');
+        el.className = 'marker';
+        el.style.backgroundImage = 'url("Marqueur_Icam.png")';
+        el.style.width = '30px';
+        el.style.height = '30px';
+        el.style.backgroundSize = 'cover';
+
+        const marker = new mapboxgl.Marker(el)  
+          .setLngLat([loc.lon, loc.lat])
+          .addTo(map);
+
+        marker.getElement().addEventListener('click', () => {
+          document.getElementById("sidebar").innerHTML =
+            `<h3>${city}</h3><ul>` +
+            loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
+        });
+
+         // ✅ Ici, on utilise city au lieu de country
+        markers.push({ country: city, marker, promos: loc.promoSet });
+      });
+
+    }
+
+    function createMarkerElement() {
+      const el = document.createElement('div');
+      el.className = 'marker';
+      el.style.backgroundImage = 'url("Marqueur_Icam.png")';
+      el.style.width = '30px';
+      el.style.height = '30px';
+      el.style.backgroundSize = 'cover';
+      return el;
     }
 
     function filterMarkers() {
       const input = document.getElementById("search").value.toLowerCase();
       markers.forEach(markerObj => {
-        const country = markerObj.country.toLowerCase();
-        markerObj.marker.getElement().style.display = country.includes(input) ? "block" : "none";
+        const label = markerObj.name.toLowerCase();
+        markerObj.marker.getElement().style.display = label.includes(input) ? "block" : "none";
       });
     }
 
