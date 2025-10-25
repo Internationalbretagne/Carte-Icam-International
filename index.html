@@ -79,145 +79,137 @@
     mapboxgl.accessToken = 'pk.eyJ1IjoiZ3VydmFuZnIiLCJhIjoiY203MjI5Y2EyMDR2eTJpc2ZjM3llazFwNSJ9._1ih1opeFU9RbWn8GZ0lyA';
 
     const map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: [10, 50],
-      zoom: 2
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [10, 50],
+        zoom: 2
     });
 
     let markers = [];
     let allData = [];
     let promos = new Set();
 
-    function loadCSV() {
-      fetch('Donnee_etudiant_Excel.csv')
-        .then(response => {
-          if (!response.ok) throw new Error("Fichier CSV introuvable.");
-          return response.text();
-        })
-        .then(data => {
-          Papa.parse(data, {
-            header: true,
-            skipEmptyLines: true,
-            delimiter: ";",
-            complete: function(results) {
-              allData = results.data;
-              processData(allData);
-              populatePromoFilter();
-            }
-          });
-        })
-        .catch(error => {
-          console.error("Erreur de chargement du CSV :", error);
-          alert("Le fichier CSV n'a pas pu être chargé. Utilisez Live Server pour ouvrir ce fichier.");
-        });
-    }
     function createMarkerElement() {
-        const el = document.createElement('div');
-         el.className = 'marker';
-        el.style.backgroundImage = 'url("Marqueur_Icam.png")';
-        el.style.width = '30px';
-        el.style.height = '30px';
-        el.style.backgroundSize = 'cover';
-        return el;
-    }   
-
-    function processData(data) {
-      const countries = {};
-      const cities = {};
-      markers.forEach(markerObj => markerObj.marker.remove());
-      markers = [];
-
-      data.forEach(row => {
-        const country = (row["Pays"] || "").trim();
-        const city = (row["Ville"] || "").trim();
-        const lat = parseFloat((row["Latitude"] || "0").replace(",", "."));
-        const lon = parseFloat((row["Longitude"] || "0").replace(",", "."));
-
-        const student = `${row["Prenom"]} ${row["Nom"]} (${row["Promotion"]})`;
-        const promo = row["Promotion"].trim();
-        promos.add(promo);
-
-        if (promo === "2025") {
-          if (!countries[country]) {
-            countries[country] = { lat, lon, students: [], promoSet: new Set() };
-          }
-          countries[country].students.push(student);
-          countries[country].promoSet.add(promo);
-        }
-
-        if (promo === "2026" || promo === "2027") {
-          if (!cities[city]) {
-            cities[city] = { lat, lon, students: [], promoSet: new Set() };
-          }
-          cities[city].students.push(student);
-          cities[city].promoSet.add(promo);
-        }
-        
-      });
-
-      // Affichage des pays (promo 2025)
-      Object.keys(countries).forEach(country => {
-        const loc = countries[country];
-        const el = createMarkerElement();
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([loc.lon, loc.lat])
-          .addTo(map);
-
-        marker.getElement().addEventListener('click', () => {
-          document.getElementById("sidebar").innerHTML =
-            `<h3>${country}</h3><ul>` +
-            loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
-        });
-
-        markers.push({ name: country, marker, promos: loc.promoSet });
-      });
-
-      Object.keys(cities).forEach(city => {
-        const loc = cities[city];
-
         const el = document.createElement('div');
         el.className = 'marker';
         el.style.backgroundImage = 'url("Marqueur_Icam.png")';
         el.style.width = '30px';
         el.style.height = '30px';
         el.style.backgroundSize = 'cover';
+        el.style.cursor = 'pointer';
+        return el;
+    }
 
-        const marker = new mapboxgl.Marker(el)  
-          .setLngLat([loc.lon, loc.lat])
-          .addTo(map);
+    function loadCSV() {
+        fetch('Donnee_etudiant_Excel.csv')
+        .then(response => {
+            if (!response.ok) throw new Error("Fichier CSV introuvable.");
+            return response.text();
+        })
+        .then(data => {
+            Papa.parse(data, {
+            header: true,
+            skipEmptyLines: true,
+            delimiter: ";",
+            complete: function(results) {
+                allData = results.data;
+                processData(allData);
+                populatePromoFilter();
+            }
+            });
+        })
+        .catch(error => {
+            console.error("Erreur de chargement du CSV :", error);
+            alert("Le fichier CSV n'a pas pu être chargé. Utilisez Live Server pour ouvrir ce fichier.");
+        });
+    }
 
-        marker.getElement().addEventListener('click', () => {
-          document.getElementById("sidebar").innerHTML =
-            `<h3>${city}</h3><ul>` +
-            loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
+    function processData(data) {
+        const countries = {};
+        const cities = {};
+        markers.forEach(markerObj => markerObj.marker.remove());
+        markers = [];
+
+        data.forEach(row => {
+            const country = (row["Pays"] || "").trim();
+            const city = (row["Ville"] || "").trim();
+            const lat = parseFloat((row["Latitude"] || "0").replace(",", "."));
+            const lon = parseFloat((row["Longitude"] || "0").replace(",", "."));
+            const student = `${row["Prenom"]} ${row["Nom"]} (${row["Promotion"]})`;
+            const promo = (row["Promotion"] || "").trim();
+            promos.add(promo);
+
+            if (promo === "2025") {
+                if (!countries[country]) {
+                    countries[country] = { lat, lon, students: [], promoSet: new Set() };
+                }
+                countries[country].students.push(student);
+                countries[country].promoSet.add(promo);
+            }
+
+            if (promo === "2026" || promo === "2027") {
+                if (!cities[city]) {
+                    cities[city] = { lat, lon, students: [], promoSet: new Set() };
+                }
+                cities[city].students.push(student);
+                cities[city].promoSet.add(promo);
+            }
         });
 
-         // ✅ Ici, on utilise city au lieu de country
-        markers.push({ name: city, marker, promos: loc.promoSet });
-      });
+        // Pays (promo 2025)
+        Object.keys(countries).forEach(country => {
+            const loc = countries[country];
+            const el = createMarkerElement();
+            const marker = new mapboxgl.Marker(el)
+                .setLngLat([loc.lon, loc.lat])
+                .addTo(map);
 
+            marker.getElement().addEventListener('click', () => {
+                document.getElementById("sidebar").innerHTML =
+                `<h3>${country}</h3><ul>` +
+                loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
+            });
+
+            markers.push({ name: country, marker, promos: loc.promoSet });
+        });
+
+        // Villes (promo 2026-2027)
+        Object.keys(cities).forEach(city => {
+            const loc = cities[city];
+            const el = createMarkerElement();
+            const marker = new mapboxgl.Marker(el)
+                .setLngLat([loc.lon, loc.lat])
+                .addTo(map);
+
+            marker.getElement().addEventListener('click', () => {
+                document.getElementById("sidebar").innerHTML =
+                `<h3>${city}</h3><ul>` +
+                loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
+            });
+
+            markers.push({ name: city, marker, promos: loc.promoSet });
+        });
     }
 
     function filterMarkers() {
-      const input = document.getElementById("search").value.toLowerCase();
-      markers.forEach(markerObj => {
-        const label = markerObj.name.toLowerCase();
-        markerObj.marker.getElement().style.display = label.includes(input) ? "block" : "none";
-      });
+        const input = document.getElementById("search").value.toLowerCase();
+        markers.forEach(markerObj => {
+            const label = (markerObj.name || "").toLowerCase();
+            markerObj.marker.getElement().style.display = label.includes(input) ? "block" : "none";
+        });
     }
 
     function filterByPromo() {
-      const selectedPromo = document.getElementById("promoFilter").value;
-      markers.forEach(markerObj => {
-        markerObj.marker.getElement().style.display =
-          selectedPromo === "all" || markerObj.promos.has(selectedPromo) ? "block" : "none";
-      });
+        const selectedPromo = document.getElementById("promoFilter").value;
+        markers.forEach(markerObj => {
+            markerObj.marker.getElement().style.display =
+                selectedPromo === "all" || markerObj.promos.has(selectedPromo) ? "block" : "none";
+        });
     }
 
     function populatePromoFilter() {
         const promoFilter = document.getElementById("promoFilter");
-        promoFilter.innerHTML = '<option value="all">Toutes promotions</option>'; // reset
+        promoFilter.innerHTML = '<option value="all">Toutes promotions</option>';
         promos.forEach(promo => {
             const option = document.createElement("option");
             option.value = promo;
@@ -226,8 +218,5 @@
         });
     }
 
-
     loadCSV();
-  </script>
-</body>
-</html>
+</script>
