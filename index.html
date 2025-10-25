@@ -99,6 +99,7 @@
           Papa.parse(data, {
             header: true,
             skipEmptyLines: true,
+            delimiter: ';',
             complete: function(results) {
               allData = results.data;
               processData(allData);
@@ -135,20 +136,14 @@
           countries[country].promoSet.add(promo);
         }
 
-        if (promo === "2026") {
+        if (promo === "2026" || promo === "2027") {
           if (!cities[city]) {
             cities[city] = { lat, lon, students: [], promoSet: new Set() };
           }
           cities[city].students.push(student);
           cities[city].promoSet.add(promo);
         }
-        if (promo === "2027") {
-          if (!cities[city]) {
-            cities[city] = { lat, lon, students: [], promoSet: new Set() };
-          }
-          cities[city].students.push(student);
-          cities[city].promoSet.add(promo);
-        }
+        
       });
 
       // Affichage des pays (promo 2025)
