@@ -120,10 +120,11 @@
       markers = [];
 
       data.forEach(row => {
-        const country = row["Pays"].trim();
-        const city = row["Ville"].trim();
-        const lat = parseFloat(row["Latitude"].replace(",", "."));
-        const lon = parseFloat(row["Longitude"].replace(",", "."));
+        const country = (row["Pays"] || "").trim();
+        const city = (row["Ville"] || "").trim();
+        const lat = parseFloat((row["Latitude"] || "0").replace(",", "."));
+        const lon = parseFloat((row["Longitude"] || "0").replace(",", "."));
+
         const student = `${row["Prenom"]} ${row["Nom"]} (${row["Promotion"]})`;
         const promo = row["Promotion"].trim();
         promos.add(promo);
@@ -184,7 +185,7 @@
         });
 
          // ✅ Ici, on utilise city au lieu de country
-        markers.push({ country: city, marker, promos: loc.promoSet });
+        markers.push({ name: city, marker, promos: loc.promoSet });
       });
 
     }
