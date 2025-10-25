@@ -70,8 +70,6 @@
       width: 90%;
       max-height: 200px;
       overflow-y: auto;
-      left: 50%;
-      transform: translateX(-50%);
       border-radius: 0 0 5px 5px;
     }
 
@@ -248,25 +246,44 @@
     }
 
     function showSuggestions() {
-        const input = document.getElementById("search");
-        const listContainer = document.getElementById("autocomplete-list");
-        const val = input.value.toLowerCase();
-        listContainer.innerHTML = "";
-        if (!val) return;
+      const input = document.getElementById("search");
+      const listContainer = document.getElementById("autocomplete-list");
+      const val = input.value.toLowerCase();
+      listContainer.innerHTML = "";
+      if (!val) return;
 
-        const suggestions = allNames.filter(name => name.toLowerCase().startsWith(val)).slice(0, 8);
+      const suggestions = allNames.filter(name => name.toLowerCase().startsWith(val)).slice(0, 8);
 
-        suggestions.forEach(name => {
-            const item = document.createElement("div");
-            item.className = "autocomplete-item";
-            item.innerHTML = `<strong>${name.substr(0, val.length)}</strong>${name.substr(val.length)}`;
-            item.addEventListener("click", () => {
-                input.value = name;
-                listContainer.innerHTML = "";
-                filterMarkers();
-            });
-            listContainer.appendChild(item);
+      suggestions.forEach(name => {
+          const item = document.createElement("div");
+          item.className = "autocomplete-item";
+          item.innerHTML = `<strong>${name.substr(0, val.length)}</strong>${name.substr(val.length)}`;
+          item.addEventListener("click", () => {
+              input.value = name;
+              listContainer.innerHTML = "";
+              filterMarkers();
+
+              // Afficher les infos dans le bandeau
+              const markerObj = markers.find(m => m.name === name);
+              if (markerObj) {
+                  // Recentrer la carte sur le marqueur
+                  const lngLat = markerObj.marker.getLngLat();
+                  map.flyTo({ center: [lngLat.lng, lngLat.lat], zoom: 6 });
+
+                  // Afficher les infos
+                  const locData = markerObj;
+                  document.getElementById("sidebar").innerHTML =
+                      `<h3>${name}</h3><ul>` +
+                      (locData.marker._element ? 
+                          markerObj.marker._element.students?.map(s => `<li>${s}</li>`).join('') : 
+                          "") +
+                      `</ul>`;
+              }
         });
+        listContainer.appendChild(item);
+    });
+
+
     }
 
     // Fermer les suggestions quand on clique ailleurs
