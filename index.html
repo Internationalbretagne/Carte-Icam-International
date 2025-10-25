@@ -112,6 +112,15 @@
           alert("Le fichier CSV n'a pas pu être chargé. Utilisez Live Server pour ouvrir ce fichier.");
         });
     }
+    function createMarkerElement() {
+        const el = document.createElement('div');
+         el.className = 'marker';
+        el.style.backgroundImage = 'url("Marqueur_Icam.png")';
+        el.style.width = '30px';
+        el.style.height = '30px';
+        el.style.backgroundSize = 'cover';
+        return el;
+    }   
 
     function processData(data) {
       const countries = {};
@@ -207,14 +216,16 @@
     }
 
     function populatePromoFilter() {
-      const promoFilter = document.getElementById("promoFilter");
-      promos.forEach(promo => {
-        const option = document.createElement("option");
-        option.value = promo;
-        option.textContent = `Promotion ${promo}`;
-        promoFilter.appendChild(option);
-      });
+        const promoFilter = document.getElementById("promoFilter");
+        promoFilter.innerHTML = '<option value="all">Toutes promotions</option>'; // reset
+        promos.forEach(promo => {
+            const option = document.createElement("option");
+            option.value = promo;
+            option.textContent = `Promotion ${promo}`;
+            promoFilter.appendChild(option);
+        });
     }
+
 
     loadCSV();
   </script>
