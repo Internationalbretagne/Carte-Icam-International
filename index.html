@@ -173,7 +173,7 @@
 
         const el = document.createElement('div');
         el.className = 'marker';
-        el.style.backgroundImage = 'url("Logo_Icam.png")';
+        el.style.backgroundImage = 'url("Marqueur_Icam.png")';
         el.style.width = '30px';
         el.style.height = '30px';
         el.style.backgroundSize = 'cover';
@@ -192,16 +192,6 @@
         markers.push({ country: city, marker, promos: loc.promoSet });
       });
 
-    }
-
-    function createMarkerElement() {
-      const el = document.createElement('div');
-      el.className = 'marker';
-      el.style.backgroundImage = 'url("Marqueur_Icam.png")';
-      el.style.width = '30px';
-      el.style.height = '30px';
-      el.style.backgroundSize = 'cover';
-      return el;
     }
 
     function filterMarkers() {
