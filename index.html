@@ -194,6 +194,16 @@
 
     }
 
+    function createMarkerElement() {
+      const el = document.createElement('div');
+      el.className = 'marker';
+      el.style.backgroundImage = 'url("Marqueur_Icam.png")';
+      el.style.width = '30px';
+      el.style.height = '30px';
+      el.style.backgroundSize = 'cover';
+      return el;
+    }
+
     function filterMarkers() {
       const input = document.getElementById("search").value.toLowerCase();
       markers.forEach(markerObj => {
