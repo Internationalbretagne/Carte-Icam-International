@@ -67,15 +67,17 @@
       border-top: none;
       z-index: 99;
       background-color: #fff;
-      width: 90%;
+      width: 100%;
       max-height: 200px;
       overflow-y: auto;
       border-radius: 0 0 5px 5px;
+      left: 0;
     }
 
     .autocomplete-item {
       padding: 10px;
       cursor: pointer;
+      text-align: left;
     }
 
     .autocomplete-item:hover {
@@ -118,7 +120,7 @@
 
     let markers = [];
     let promos = new Set();
-    let allNames = []; // pour autocomplétion
+    let allNames = [];
 
     function createMarkerElement() {
         const el = document.createElement('div');
@@ -188,7 +190,6 @@
 
         allNames = [...new Set(allNames)];
 
-        // Création des marqueurs
         Object.keys(countries).forEach(country => {
             const loc = countries[country];
             const marker = new mapboxgl.Marker(createMarkerElement())
@@ -200,7 +201,7 @@
                 `<h3>${country}</h3><ul>` + loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
             });
 
-            markers.push({ name: country, marker, promos: loc.promoSet });
+            markers.push({ name: country, marker, promos: loc.promoSet, students: loc.students });
         });
 
         Object.keys(cities).forEach(city => {
@@ -214,7 +215,7 @@
                 `<h3>${city}</h3><ul>` + loc.students.map(s => `<li>${s}</li>`).join('') + `</ul>`;
             });
 
-            markers.push({ name: city, marker, promos: loc.promoSet });
+            markers.push({ name: city, marker, promos: loc.promoSet, students: loc.students });
         });
     }
 
@@ -263,30 +264,21 @@
               listContainer.innerHTML = "";
               filterMarkers();
 
-              // Afficher les infos dans le bandeau
               const markerObj = markers.find(m => m.name === name);
               if (markerObj) {
-                  // Recentrer la carte sur le marqueur
                   const lngLat = markerObj.marker.getLngLat();
                   map.flyTo({ center: [lngLat.lng, lngLat.lat], zoom: 6 });
 
-                  // Afficher les infos
-                  const locData = markerObj;
                   document.getElementById("sidebar").innerHTML =
                       `<h3>${name}</h3><ul>` +
-                      (locData.marker._element ? 
-                          markerObj.marker._element.students?.map(s => `<li>${s}</li>`).join('') : 
-                          "") +
+                      markerObj.students.map(s => `<li>${s}</li>`).join('') +
                       `</ul>`;
               }
         });
         listContainer.appendChild(item);
-    });
-
-
+      });
     }
 
-    // Fermer les suggestions quand on clique ailleurs
     document.addEventListener("click", (e) => {
         if (!e.target.closest("#search")) {
             document.getElementById("autocomplete-list").innerHTML = "";
